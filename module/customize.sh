@@ -23,4 +23,3 @@ elif [ "$BOOTMODE" != true ]; then
 fi
 
 ui_print "- Reboot, then run:  su -c \"systemizer help\""
-ui_print "- Before the first reboot:  su -c \"sh $MODROOT/$MODID/system/bin/systemizer help\""

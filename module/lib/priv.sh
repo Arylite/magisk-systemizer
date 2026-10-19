@@ -37,20 +37,26 @@ sz_priv_plan() { # pkg "grants" [lenient]
   fi
   if [ -s "$SZ_TMP/g.list" ] || [ -s "$SZ_TMP/d.list" ]; then SZ_XML_NEEDED=1; fi
   sz_say "Privileged permissions requested: $(grep -c '' "$SZ_TMP/priv.list")  granted: $(grep -c '' "$SZ_TMP/g.list")  denied: $(grep -c '' "$SZ_TMP/d.list")"
+  sz_list_perms granted "$SZ_TMP/g.list"; sz_list_perms denied "$SZ_TMP/d.list"
   if [ -s "$SZ_TMP/sig.list" ]; then
     sz_say "Signature-only permissions (cannot be granted without the platform key): $(grep -c '' "$SZ_TMP/sig.list")"
+    sz_list_perms signature-only "$SZ_TMP/sig.list"
   fi
   if [ "$SZ_PRIVPROP" = disable ]; then
     sz_warn "ro.control_privapp_permissions=disable: this device grants every privileged permission the app requests, whatever the allowlist says"
   fi
 }
 
+sz_list_perms() { # label file
+  while IFS= read -r lp_p; do [ -z "$lp_p" ] || sz_say "  $1: $lp_p"; done < "$2"
+}
+
 # Read the app's requested permissions and the device permission table, then split
 # them into priv.list / sig.list. Status 1 when either tool output is unusable.
 sz_priv_load() { # pkg
-  dumpsys package "$1" > "$SZ_TMP/dump.raw" 2>/dev/null
+  sz_capture "$SZ_TMP/dump.raw" dumpsys package "$1"
   sz_parse_dump "$SZ_TMP/dump.raw" "$1" || return 1
-  pm list permissions -f > "$SZ_TMP/perms.raw" 2>/dev/null
+  sz_capture "$SZ_TMP/perms.raw" pm list permissions -f
   sz_parse_perms "$SZ_TMP/perms.raw" "$SZ_TMP/permlevels" || return 1
   sz_priv_scan
 }

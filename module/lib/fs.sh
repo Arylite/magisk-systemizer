@@ -1,5 +1,13 @@
 # fs.sh - file helpers: byte compare, SELinux label, atomic swap, single-run lock.
 
+# Run an Android service command (pm, dumpsys) and keep its output in a file. These
+# commands make system_server write to the stdout they are given; it may write to a
+# pipe, but not to a file under /data/adb (SELinux adb_data_file). So go through cat.
+sz_capture() { # file command...
+  cap_f=$1; shift
+  "$@" 2>/dev/null | cat > "$cap_f"
+}
+
 # Byte comparison; cksum is the fallback where cmp does not exist.
 sz_same() {
   if [ -n "$SZ_CMP" ]; then cmp -s "$1" "$2"
