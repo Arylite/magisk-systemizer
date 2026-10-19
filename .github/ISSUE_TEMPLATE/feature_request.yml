@@ -1,0 +1,21 @@
+name: Feature request
+description: Propose a change or a new command
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do that you cannot do today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like the command or behaviour to look like?
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: This proposal keeps
+      options:
+        - label: the tool device-agnostic (no hardcoded package, device or Android version)
+        - label: the safe defaults (least privilege, nothing granted without an explicit flag)

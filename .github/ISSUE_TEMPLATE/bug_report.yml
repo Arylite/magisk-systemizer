@@ -1,0 +1,43 @@
+name: Bug report
+description: Something failed, or behaved differently from the docs
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: The exact command and its output
+      description: Include the exit code (`echo $?`). Replace private package names if you wish.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `su -c "systemizer doctor"`
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device, Android version, ROM
+      placeholder: Pixel 10a, Android 16, stock
+    validations:
+      required: true
+  - type: input
+    id: root
+    attributes:
+      label: Magisk (or KernelSU / APatch) version
+    validations:
+      required: true
+  - type: textarea
+    id: boot
+    attributes:
+      label: Did the device fail to boot or bootloop?
+      description: If yes, say how you recovered (see "Boot problem" in the README).

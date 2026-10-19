@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck (module code must be clean)
+        run: |
+          shellcheck --version
+          shellcheck module/lib/*.sh module/system/bin/systemizer module/customize.sh
+      - name: ShellCheck (tests, with quoting and style rules relaxed on purpose)
+        run: shellcheck -e SC2016,SC2015,SC2086,SC1090,SC1091 tests/*.sh
+      - name: actionlint (workflows)
+        run: docker run --rm -v "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+
+  test:
+    name: Tests (bash, dash, mksh, busybox ash)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the other shells (Android uses mksh; Magisk ships busybox ash)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mksh busybox-static
+          printf '#!/bin/sh\nexec busybox ash "$@"\n' | sudo tee /usr/local/bin/bbsh > /dev/null
+          sudo chmod +x /usr/local/bin/bbsh
+      - name: Hygiene and tests under every shell
+        run: SHELLS="bash dash mksh bbsh" sh tests/run.sh
+
+  build:
+    name: Build the module zip
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build twice and compare (the build must be reproducible)
+        run: |
+          python build.py --out dist
+          python build.py --out dist2
+          cmp dist/*.zip dist2/*.zip
+          (cd dist && sha256sum ./*.zip | tee SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: module-zip
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS
+          if-no-files-found: error
