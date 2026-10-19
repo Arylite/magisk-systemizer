@@ -5,7 +5,8 @@
 sz_installed_paths() {
   SZ_KIND=none SZ_NPATHS=0
   : > "$SZ_TMP/paths"
-  pm path "$1" > "$SZ_TMP/pm.out" 2>/dev/null || return 0
+  sz_capture "$SZ_TMP/pm.out" pm path "$1"
+  [ -s "$SZ_TMP/pm.out" ] || return 0
   ip_d=0 ip_s=0 ip_b=0
   while IFS= read -r ip_l; do
     case $ip_l in '') continue ;; package:/*.apk) ip_p=${ip_l#package:} ;; *) ip_b=$((ip_b + 1)); continue ;; esac
@@ -25,7 +26,7 @@ sz_installed_paths() {
 }
 
 sz_user_packages() { # -> $SZ_TMP/pk.list, sorted when sort exists
-  pm list packages -3 > "$SZ_TMP/pk.raw" 2>/dev/null || sz_die "$SZ_FAIL" "pm list packages failed"
+  sz_capture "$SZ_TMP/pk.raw" pm list packages -3
   : > "$SZ_TMP/pk.unsorted"
   while IFS= read -r up_l; do
     up_n=${up_l#package:}

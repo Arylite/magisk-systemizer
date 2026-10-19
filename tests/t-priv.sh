@@ -10,6 +10,7 @@ priv() { t_new; t_app $P 1 1 "$@"; X=$MOD/system/etc/permissions/privapp-permiss
 # ---- nothing granted: every requested privileged permission is denied explicitly
 priv $IP $MU $NET $BA
 t_cli install $P --mode privileged; t_rc install 0; t_out "plan" "granted: 0  denied: 2"; t_out "signature note" "Signature-only"
+t_out "names are listed" "  denied: $IP"; t_out "signature-only is named" "  signature-only: $BA"
 t_file "app in priv-app" "$MOD/system/priv-app/$P/base.apk"; t_nofile "not in app" "$MOD/system/app/$P"
 t_grep "deny 1" "<deny-permission name=\"$IP\"/>" "$X"; t_grep "deny 2" "<deny-permission name=\"$MU\"/>" "$X"
 t_nogrep "no grant" "<permission name=" "$X"; t_nogrep "normal permission left out" "$NET" "$X"

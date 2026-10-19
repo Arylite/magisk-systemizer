@@ -42,13 +42,16 @@ t_new() {
   t_prop ro.build.version.sdk 36
   t_prop ro.control_privapp_permissions enforce
   printf 'Permissive\n' > "$T_ROOT/fake/enforce"
-  t_shim pm 'case "$1 $2" in
+  # Like system_server under SELinux: pm and dumpsys only write to a pipe, never to a file.
+  t_shim pm '[ -p /dev/fd/1 ] || { echo "stdout is not a pipe" >&2; exit 1; }
+case "$1 $2" in
   "path "*) [ -f "$FAKE/path.$2" ] && { cat "$FAKE/path.$2"; exit 0; }; exit 1 ;;
   "list packages") cat "$FAKE/packages" 2>/dev/null; exit 0 ;;
   "list permissions") cat "$FAKE/permissions"; exit 0 ;;
 esac
 exit 1'
-  t_shim dumpsys '[ -f "$FAKE/dump.$2" ] && cat "$FAKE/dump.$2"; exit 0'
+  t_shim dumpsys '[ -p /dev/fd/1 ] || { echo "stdout is not a pipe" >&2; exit 1; }
+[ -f "$FAKE/dump.$2" ] && cat "$FAKE/dump.$2"; exit 0'
   t_shim getprop '[ -f "$FAKE/prop.$1" ] && cat "$FAKE/prop.$1"; exit 0'
   t_shim getenforce 'cat "$FAKE/enforce"'
   FAKE=$T_ROOT/fake

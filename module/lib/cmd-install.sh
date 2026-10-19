@@ -86,7 +86,7 @@ cmd_install() {
   if [ $in_dry -eq 1 ]; then sz_say "Dry run: everything verified, nothing changed."; return 0; fi
   sz_commit "$in_name" "$in_mode" || sz_die "$SZ_FAIL" "could not publish the overlay; run: systemizer doctor"
   in_vc=0
-  if sz_have dumpsys && dumpsys package "$in_name" > "$SZ_TMP/dump.raw" 2>/dev/null && sz_parse_dump "$SZ_TMP/dump.raw" "$in_name"; then
+  if sz_have dumpsys && sz_capture "$SZ_TMP/dump.raw" dumpsys package "$in_name" && sz_parse_dump "$SZ_TMP/dump.raw" "$in_name"; then
     in_vc=${SZ_D_VCODE:-0}
   fi
   sz_state_write "$in_name" "$in_mode" "$SZ_SRC" "$SZ_NPATHS" "$in_vc" "$(sz_join_comma "$SZ_TMP/g.list")" \

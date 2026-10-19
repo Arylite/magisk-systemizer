@@ -29,7 +29,7 @@ sz_refresh_one() { # pkg
   if [ "$rf_dry" = 1 ]; then sz_say "$1: dry run, would refresh $SZ_NPATHS APK file(s)"; return 0; fi
   sz_commit "$1" "$rf_mode" || { sz_err "could not publish the overlay of $1; run: systemizer doctor"; return "$SZ_FAIL"; }
   rf_vc=0
-  if sz_have dumpsys && dumpsys package "$1" > "$SZ_TMP/dump.raw" 2>/dev/null && sz_parse_dump "$SZ_TMP/dump.raw" "$1"; then
+  if sz_have dumpsys && sz_capture "$SZ_TMP/dump.raw" dumpsys package "$1" && sz_parse_dump "$SZ_TMP/dump.raw" "$1"; then
     rf_vc=${SZ_D_VCODE:-0}
   fi
   rf_gl=
