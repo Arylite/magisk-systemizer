@@ -16,13 +16,18 @@ permissions:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: ShellCheck (module code must be clean)
+      - name: Install ShellCheck 0.11.0 (pinned, because the runner image ships an older one)
         run: |
+          curl -fsSL -o sc.tar.xz https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
+          echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  sc.tar.xz" | sha256sum -c -
+          tar -xJf sc.tar.xz
+          sudo install shellcheck-v0.11.0/shellcheck /usr/local/bin/shellcheck
           shellcheck --version
-          shellcheck module/lib/*.sh module/system/bin/systemizer module/customize.sh
+      - name: ShellCheck (module code must be clean)
+        run: shellcheck module/lib/*.sh module/system/bin/systemizer module/customize.sh
       - name: ShellCheck (tests, with quoting and style rules relaxed on purpose)
         run: shellcheck -e SC2016,SC2015,SC2086,SC1090,SC1091 tests/*.sh
       - name: actionlint (workflows)
@@ -30,7 +35,7 @@ jobs:
 
   test:
     name: Tests (bash, dash, mksh, busybox ash)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -48,7 +53,7 @@ jobs:
   build:
     name: Build the module zip
     needs: [lint, test]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
