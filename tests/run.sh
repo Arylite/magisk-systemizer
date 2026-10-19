@@ -14,7 +14,7 @@ for f in $FILES; do
 done
 if grep -nP '[^\x00-\x7F]' $FILES module/module.prop README.md docs/*.md > /dev/null 2>&1; then bad "non-ASCII character in the sources"; fi
 for f in $FILES module/module.prop README.md; do
-  tr -d '\r' < "$f" | cmp -s - "$f" || bad "$f has CR line endings"
+  [ "$(tr -d '\r' < "$f" | cksum)" = "$(cksum < "$f")" ] || bad "$f has CR line endings"
 done
 if cat module/lib/*.sh module/system/bin/systemizer | grep -v '^[[:space:]]*#' \
   | grep -E '(^|[;&|(]|then|do)[[:space:]]*(eval|local|source)[[:space:]]|\[\[' > /dev/null; then

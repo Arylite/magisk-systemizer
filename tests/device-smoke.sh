@@ -68,6 +68,7 @@ if [ -n "$PA" ]; then
   dsh "grep -c '<permission name=\"$G\"/>' $X" | grep -q 1 && ok || bad "grant not written as <permission>" "$(dsh "cat $X")"
   run status "$PA"; want "status of the privileged app" 0
   echo "privileged app tested: $PA, granted $G"
+  run remove "$PA"; want "remove the privileged app again" 0
 else echo "SKIP: no installed app requests a privileged permission"; fi
 run remove "$A1"; want remove 0
 run remove "$A2"; want "remove split app" 0

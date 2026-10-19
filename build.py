@@ -103,7 +103,7 @@ def main():
     target, prop = build(Path(args.src), Path(args.out))
     names = verify(target, prop)
     digest = hashlib.sha256(target.read_bytes()).hexdigest()
-    print("{} ({} files)\nsha256 {}".format(target, len(names), digest))
+    print(f"{target} ({len(names)} files)\nsha256 {digest}")
 
 
 if __name__ == "__main__":
