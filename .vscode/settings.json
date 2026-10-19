@@ -1,0 +1,14 @@
+{
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.associations": {
+    "**/module/system/bin/systemizer": "shellscript",
+    "**/META-INF/com/google/android/update-binary": "shellscript"
+  },
+  "shellcheck.customArgs": ["-x"],
+  "shellcheck.enableQuickFix": true,
+  "[python]": { "editor.tabSize": 4 },
+  "[shellscript]": { "editor.tabSize": 2, "editor.insertSpaces": true },
+  "editor.rulers": [100]
+}
