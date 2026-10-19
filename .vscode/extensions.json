@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "timonwong.shellcheck",
+    "editorconfig.editorconfig",
+    "ms-python.python",
+    "github.vscode-github-actions"
+  ]
+}

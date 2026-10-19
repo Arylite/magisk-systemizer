@@ -1,0 +1,4 @@
+# Variables are shared between the sourced lib files, so per-file checks for
+# unused / unassigned variables (SC2034, SC2154, SC2153) are expected noise.
+disable=SC2034,SC2154,SC2153
+shell=sh

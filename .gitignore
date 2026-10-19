@@ -1,0 +1,6 @@
+dist/
+dist2/
+.tmp*/
+*.zip
+!tests/fixtures/*.zip
+.claude/
