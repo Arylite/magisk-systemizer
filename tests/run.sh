@@ -13,7 +13,9 @@ for f in $FILES; do
   [ "$n" -le 150 ] || bad "$f has $n lines (limit 150)"
 done
 if grep -nP '[^\x00-\x7F]' $FILES module/module.prop README.md docs/*.md > /dev/null 2>&1; then bad "non-ASCII character in the sources"; fi
-if grep -l "$(printf '\r')" $FILES module/module.prop > /dev/null 2>&1; then bad "CR line ending in the sources"; fi
+for f in $FILES module/module.prop README.md; do
+  tr -d '\r' < "$f" | cmp -s - "$f" || bad "$f has CR line endings"
+done
 if cat module/lib/*.sh module/system/bin/systemizer | grep -v '^[[:space:]]*#' \
   | grep -E '(^|[;&|(]|then|do)[[:space:]]*(eval|local|source)[[:space:]]|\[\[' > /dev/null; then
   bad "eval, source, local or [[ ]] used in the module shell code"; fi
