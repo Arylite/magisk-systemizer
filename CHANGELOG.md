@@ -18,8 +18,8 @@ versions follow `version=` in `module/module.prop`.
 
 ### Validated on a device
 - Pixel 10a, Android 16, Magisk 30.7, SELinux enforcing: install, magic mount, system mode with a
-  single and a split APK, updated-system-app behaviour, module upgrade, removal (docs/TESTING.md).
+  single and a split APK, privileged mode with explicit grants, updated-system-app behaviour,
+  module upgrade, removal (docs/TESTING.md).
 
 ### Not validated yet
-- Privileged mode booting under `enforce`, refresh after a real store update, other devices/ROMs,
-  KernelSU and APatch.
+- Refresh after a real store update, other devices/ROMs, KernelSU and APatch.

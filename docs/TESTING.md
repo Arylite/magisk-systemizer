@@ -68,24 +68,24 @@ Executed by hand on 2026-10-19: Pixel 10a, Android 16 (API 36), Magisk 30.7, SEL
 | Module upgrade over a managed app, reboot | executed: state and overlay carried over, still `Active: yes`; a command run before the reboot was refused (exit 7) |
 | `remove` twice (second is a no-op), reboot | executed: back to a plain user app, no hidden system copy, data intact |
 | Split-APK app (Google Keep, 4 APKs): install, reboot, remove, reboot | executed: the boot scan loaded the directory as one package with all 4 splits; restored afterwards |
-| Privileged mode booting under `enforce` | **not executed**: a wrong allowlist can stop the boot; needs an explicit go-ahead and a recovery plan |
+| Privileged mode with 4 explicit grants, reboot under `enforce` | executed: normal boot; `PRIVILEGED` + `SYSTEM` + `UPDATED_SYSTEM_APP`, hidden copy in `/system/priv-app`, the 4 permissions `granted=true`, no allowlist complaint in logcat; a non-privileged special-access permission was unaffected |
 | Refresh after a real store update, recovery drill, removal from the Magisk app | **not executed** |
 | Other Android versions, ROMs, KernelSU, APatch | **not executed** |
 
-Defects only the phone could show (both fixed, the first now has a regression test):
+Defects only the phone could show (all fixed, the first now has a regression test):
 
 1. `pm` and `dumpsys` make system_server write to the stdout they are given, which cannot be a file
    under `/data/adb` (SELinux `adb_data_file`). `pm path` silently failed and the tool answered
    "package not installed". Output now goes through a pipe (`sz_capture`).
 2. After a Magisk-app style install the files stay in `modules_update` until the reboot, so the
    "before the first reboot" hint printed by `customize.sh` was wrong; it is gone.
+3. `status` of a privileged app took 50 s: the shell loop over the full permission table (thousands of
+   entries) is slow under mksh. `grep` now cuts out only the requested permissions: 5 s.
 
 Also learned: right after a reboot `pm` can answer before the package manager is ready, and the tool
 then fails safely (exit 3). Wait for `sys.boot_completed` and a working `pm`.
 
 ## Still to do on a device
 
-Privileged mode under `enforce` (on a phone you can recover, with
-`touch /data/adb/modules/arylite.systemizer/disable` possible from recovery or adb; check
-`dumpsys package` grants and `logcat | grep -i privapp`), a refresh after a real update, the
-recovery drill, and a second ROM.
+A refresh after a real store update (including a privileged app that gains a permission), the
+recovery drill (reflash the stock `init_boot`), a Pixel 10 / 10 Pro, and a second ROM.

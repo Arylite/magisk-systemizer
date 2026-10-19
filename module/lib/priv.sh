@@ -57,7 +57,17 @@ sz_priv_load() { # pkg
   sz_capture "$SZ_TMP/dump.raw" dumpsys package "$1"
   sz_parse_dump "$SZ_TMP/dump.raw" "$1" || return 1
   sz_capture "$SZ_TMP/perms.raw" pm list permissions -f
-  sz_parse_perms "$SZ_TMP/perms.raw" "$SZ_TMP/permlevels" || return 1
+  grep -q 'permission:' "$SZ_TMP/perms.raw" || return 1
+  # The table has thousands of entries and reading it in a shell loop takes ~30 s on a
+  # phone: let grep cut out the few permissions this app requests, then parse only those.
+  : > "$SZ_TMP/perms.pat"; : > "$SZ_TMP/perms.sub"
+  while IFS= read -r pl_q; do
+    printf '%s\n' "+ permission:$pl_q" "permission:$pl_q" "  permission:$pl_q" >> "$SZ_TMP/perms.pat"
+  done < "$SZ_TMP/reqperms"
+  if [ -s "$SZ_TMP/perms.pat" ]; then
+    grep -F -x -A12 -f "$SZ_TMP/perms.pat" "$SZ_TMP/perms.raw" > "$SZ_TMP/perms.sub"
+  fi
+  sz_parse_perms "$SZ_TMP/perms.sub" "$SZ_TMP/permlevels" # empty when nothing requested matches
   sz_priv_scan
 }
 

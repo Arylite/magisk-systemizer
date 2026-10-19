@@ -81,14 +81,15 @@ API 36 (one Pixel 10a) was exercised (see TESTING.md).
 | Pixel 10a, Android 16 (API 36), `enforce`: CLI in a scratch directory as the adb shell user (mksh, toybox, real `pm`/`dumpsys`) | executed, passing (TESTING.md tier 2) |
 | Parsers against real Android 16 `dumpsys package` and `pm list permissions -f` output | executed (fixtures are trimmed captures) |
 | Pixel 10a, Android 16, Magisk 30.7, SELinux Enforcing: real install, magic mount, system mode, updated-system-app behaviour, file labels, reboot persistence, module upgrade, removal | executed (TESTING.md tier 3) |
-| Privileged mode booting under `enforce`; refresh after a real store update | **not executed**: a wrong allowlist can stop the boot |
+| Privileged mode with explicit grants, rebooted under `enforce` (Pixel 10a, Android 16) | executed (TESTING.md tier 3) |
+| Refresh after a real store update; other devices and ROMs | **not executed** |
 | Android 5-15, other OEMs, KernelSU, APatch | **not executed** |
 | Split APK directory (4 APKs) accepted by the boot-time scan | executed on Android 16 |
 | Apps with native libraries, shared UIDs, or that need special partition labels | **not executed** |
 
 Honest summary: the shell logic, argument handling, transactions and privileged-mode rules are
-tested, and system mode (single and split APK) was verified through a real boot on one device; the
-privileged-mode boot and other devices are not. Do not read this table as universal compatibility.
+tested, and system mode (single and split APK) and privileged mode with explicit grants were
+verified through a real boot on one device. Other devices, ROMs and a refresh after a real update are not. Do not read this table as universal compatibility.
 
 ## 5. Open constraints
 
@@ -118,4 +119,4 @@ privileged-mode boot and other devices are not. Do not read this table as univer
 | Network | none | the tool and the module download nothing |
 
 Residual risk is dominated by what a tool like this can never prove: the first boot with a new
-system app on a given ROM, above all in privileged mode. Test on a device you can recover, with a Magisk disable path ready.
+system app on a given ROM, above all in privileged mode, which worked on the one device tried. Test on a device you can recover, with a Magisk disable path ready.
