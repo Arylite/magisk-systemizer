@@ -1,0 +1,62 @@
+#!/system/bin/sh
+# systemizer - turn installed apps into systemless system / privileged apps.
+# Launcher: finds the module directory, loads lib/*.sh, runs one command.
+# See README.md and docs/DESIGN.md.
+
+SZ_ID=arylite.systemizer
+SZ_LIBS="core state parse xml fs discover interact priv stage init
+         cmd-list cmd-install cmd-status cmd-refresh cmd-remove cmd-doctor"
+sz_self=.
+case $0 in */*) sz_self=${0%/*} ;; esac
+
+sz_try_mod() {
+  [ -f "$1/module.prop" ] && [ -r "$1/lib/core.sh" ] && grep -qx "id=$SZ_ID" "$1/module.prop"
+}
+
+# Module directory: this script's own tree, then the Magisk locations.
+SZ_MODDIR=
+if [ -n "$SYSTEMIZER_TESTING" ] && [ -n "$SYSTEMIZER_MODDIR" ] && sz_try_mod "$SYSTEMIZER_MODDIR"; then
+  SZ_MODDIR=$SYSTEMIZER_MODDIR
+else
+  sz_c=$(cd "$sz_self/../.." 2>/dev/null && pwd)
+  if [ -n "$sz_c" ] && sz_try_mod "$sz_c"; then SZ_MODDIR=$sz_c; fi
+fi
+if [ -z "$SZ_MODDIR" ]; then
+  sz_mp=$(magisk --path 2>/dev/null)
+  for sz_c in "${NVBASE:-/data/adb}/modules/$SZ_ID" "$sz_mp/.magisk/modules/$SZ_ID"; do
+    if sz_try_mod "$sz_c"; then SZ_MODDIR=$sz_c; break; fi
+  done
+fi
+if [ -z "$SZ_MODDIR" ]; then
+  echo "error: the $SZ_ID module directory was not found (is the module installed and enabled?)" >&2
+  exit 4
+fi
+
+for sz_l in $SZ_LIBS; do
+  [ -r "$SZ_MODDIR/lib/$sz_l.sh" ] || { echo "error: missing $SZ_MODDIR/lib/$sz_l.sh" >&2; exit 4; }
+  # shellcheck source=/dev/null
+  . "$SZ_MODDIR/lib/$sz_l.sh"
+done
+
+SZ_SYSTEM=/system
+SZ_DATA=/data
+# Test hooks only exist when SYSTEMIZER_TESTING is set; never set it on a device.
+if [ -n "$SYSTEMIZER_TESTING" ]; then
+  [ -z "$SYSTEMIZER_SYSTEM" ] || SZ_SYSTEM=$SYSTEMIZER_SYSTEM
+  [ -z "$SYSTEMIZER_DATA" ] || SZ_DATA=$SYSTEMIZER_DATA
+fi
+SZ_STATE=$SZ_MODDIR/state
+SZ_WORK=$SZ_MODDIR/.work
+SZ_OVL=$SZ_MODDIR/system
+SZ_TMP=$SZ_WORK/tmp.$$
+SZ_LOCKED=0
+in_yes=0
+
+SZ_CMD=${1:-help}
+[ $# -eq 0 ] || shift
+case $SZ_CMD in
+  help|-h|--help) usage; exit 0 ;;
+  version|--version) printf 'systemizer %s\n' "$(sz_kv_get "$SZ_MODDIR/module.prop" version)"; exit 0 ;;
+  list|install|status|refresh|remove|doctor) "cmd_$SZ_CMD" "$@" ;;
+  *) sz_usage_die "unknown command: $SZ_CMD" ;;
+esac

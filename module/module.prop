@@ -1,0 +1,6 @@
+id=arylite.systemizer
+name=App Systemizer
+version=v0.1.0
+versionCode=1
+author=Arylite
+description=Systemize any installed app (system or privileged) through the Magisk overlay. Usage: su -c "systemizer help"
