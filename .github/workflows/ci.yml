@@ -65,9 +65,13 @@ jobs:
           python build.py --out dist2
           cmp dist/*.zip dist2/*.zip
           (cd dist && sha256sum ./*.zip | tee SHA256SUMS)
+      # Artifact storage can run out on a free account; the build and the reproducibility
+      # check above are what matter, and releases attach the zip without this storage.
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: module-zip
+          retention-days: 7
           path: |
             dist/*.zip
             dist/SHA256SUMS
