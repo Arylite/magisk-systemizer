@@ -1,0 +1,46 @@
+name: Release
+
+# Push a tag such as v0.1.0 (it must equal "version=" in module/module.prop).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Test, build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: The tag must match module.prop
+        run: |
+          version=$(sed -n 's/^version=//p' module/module.prop)
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME does not match module.prop version $version" >&2
+            exit 1
+          fi
+      - name: Tests
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mksh
+          SHELLS="bash dash mksh" sh tests/run.sh
+      - name: Build
+        run: |
+          python build.py --out dist
+          (cd dist && sha256sum ./*.zip | tee SHA256SUMS)
+      - name: Release notes from CHANGELOG.md
+        run: |
+          number=${GITHUB_REF_NAME#v}
+          sed -n "/^## \[$number\]/,/^## \[/p" CHANGELOG.md | sed '1d;$d' > notes.md
+          [ -s notes.md ] || echo "See CHANGELOG.md." > notes.md
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/SHA256SUMS \
+            --title "$GITHUB_REF_NAME" --notes-file notes.md
