@@ -1,0 +1,99 @@
+
+Packages:
+  Package [com.example.real] (ddc6597):
+    appId=10322
+    pccId=-1
+    pkg=Package{7957384 com.example.real}
+    codePath=/data/app/~~Hae7qI-oCp_QPaSNU0HYIA==/com.example.real-zfG81GSFCdiq1jf42ZCBnQ==
+    resourcePath=/data/app/~~Hae7qI-oCp_QPaSNU0HYIA==/com.example.real-zfG81GSFCdiq1jf42ZCBnQ==
+    legacyNativeLibraryDir=/data/app/~~Hae7qI-oCp_QPaSNU0HYIA==/com.example.real-zfG81GSFCdiq1jf42ZCBnQ==/lib
+    extractNativeLibs=true
+    primaryCpuAbi=arm64-v8a
+    secondaryCpuAbi=null
+    cpuAbiOverride=null
+    versionCode=701046282 minSdk=26 targetSdk=37
+    minExtensionVersions=[]
+    versionName=10.39.34.995726622.4-release
+    hiddenApiEnforcementPolicy=2
+    usesNonSdkApi=false
+    splits=[base]
+    apkSigningVersion=3
+    flags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP KILL_AFTER_RESTORE ]
+    privateFlags=[ PRIVATE_FLAG_ACTIVITIES_RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION ALLOW_AUDIO_PLAYBACK_CAPTURE HAS_DOMAIN_URLS PARTIALLY_DIRECT_BOOT_AWARE PRIVATE_FLAG_ALLOW_NATIVE_HEAP_POINTER_TAGGING ]
+    forceQueryable=false
+    pageSizeCompat=0
+    queriesPackages=[com.google.android.apps.handwriting.ime, com.google.android.googlequicksearchbox, com.google.android.apps.wearables.maestro.companion, com.google.android.apps.chrome, com.google.android.googlequicksearchbox]
+    queriesIntents=[Intent { act=android.intent.action.TTS_SERVICE }, Intent { act=androidx.window.extensions.layout.EngagementModeService }, Intent { act=androidx.xr.projected.ACTION_ENGAGEMENT_BIND }, Intent { act=androidx.xr.projected.ACTION_BIND }, Intent { act=android.intent.action.VIEW dat=https:/... }]
+    scannedAsStoppedSystemApp=false
+    supportsScreens=[small, medium, large, xlarge, resizeable, anyDensity]
+    usesOptionalLibraries:
+      org.apache.http.legacy
+      androidx.window.extensions
+      androidx.window.sidecar
+    usesOptionalNativeLibraries:
+      libedgetpu_util.so
+      libedgetpu_client.google.so
+      libopenxr.google.so
+    usesLibraryFiles:
+      /system/framework/org.apache.http.legacy.jar
+      /system_ext/framework/androidx.window.extensions.jar
+      /system_ext/framework/androidx.window.sidecar.jar
+      libedgetpu_util.so
+      libedgetpu_client.google.so
+    timeStamp=2026-10-15 13:55:46
+    lastUpdateTime=2026-10-15 13:55:50
+    installerPackageName=com.android.vending
+    installerPackageUid=10196
+    initiatingPackageName=com.android.vending
+    originatingPackageName=null
+    packageSource=0
+    appMetadataFilePath=null
+    appMetadataSource=0
+    signatures=PackageSignatures{fec976d version:3, signatures:[7d3bce25], past signatures:[]}
+    installPermissionsFixed=false
+    pkgFlags=[ HAS_CODE ALLOW_CLEAR_USER_DATA ALLOW_BACKUP KILL_AFTER_RESTORE ]
+    privatePkgFlags=[ PRIVATE_FLAG_ACTIVITIES_RESIZE_MODE_RESIZEABLE_VIA_SDK_VERSION ALLOW_AUDIO_PLAYBACK_CAPTURE HAS_DOMAIN_URLS PARTIALLY_DIRECT_BOOT_AWARE PRIVATE_FLAG_ALLOW_NATIVE_HEAP_POINTER_TAGGING ]
+    apexModuleName=null
+    declared permissions:
+      com.example.real.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: prot=signature
+    requested permissions:
+      android.permission.POST_NOTIFICATIONS
+      com.google.android.c2dm.permission.RECEIVE
+      android.permission.MODIFY_AUDIO_SETTINGS
+      com.google.android.providers.gsf.permission.READ_GSERVICES
+      android.permission.SYSTEM_ALERT_WINDOW
+      android.permission.DETECT_SCREEN_CAPTURE
+      android.permission.NFC
+      android.permission.FOREGROUND_SERVICE
+      android.permission.RECEIVE_BOOT_COMPLETED
+      android.permission.FOREGROUND_SERVICE_SPECIAL_USE
+      android.permission.INTERNET
+      android.permission.READ_EXTERNAL_STORAGE
+      android.permission.GET_PACKAGE_SIZE
+      com.example.real.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
+      android.permission.ACCESS_NETWORK_STATE
+      android.permission.POST_PROMOTED_NOTIFICATIONS
+      android.permission.FOREGROUND_SERVICE_MICROPHONE
+      android.permission.DETECT_SCREEN_RECORDING
+      android.permission.WRITE_EXTERNAL_STORAGE
+      android.permission.ACCESS_WIFI_STATE
+      android.permission.RECORD_AUDIO
+      android.permission.WAKE_LOCK
+    install permissions:
+      com.google.android.c2dm.permission.RECEIVE: granted=true
+      android.permission.MODIFY_AUDIO_SETTINGS: granted=true
+      com.google.android.providers.gsf.permission.READ_GSERVICES: granted=true
+      android.permission.DETECT_SCREEN_CAPTURE: granted=true
+      android.permission.NFC: granted=true
+      android.permission.FOREGROUND_SERVICE: granted=true
+      android.permission.RECEIVE_BOOT_COMPLETED: granted=true
+      android.permission.FOREGROUND_SERVICE_SPECIAL_USE: granted=true
+      android.permission.INTERNET: granted=true
+      android.permission.GET_PACKAGE_SIZE: granted=true
+      com.example.real.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: granted=true
+      android.permission.ACCESS_NETWORK_STATE: granted=true
+      android.permission.POST_PROMOTED_NOTIFICATIONS: granted=true
+      android.permission.FOREGROUND_SERVICE_MICROPHONE: granted=true
+      android.permission.DETECT_SCREEN_RECORDING: granted=true
+      android.permission.ACCESS_WIFI_STATE: granted=true
+      android.permission.WAKE_LOCK: granted=true

@@ -1,0 +1,37 @@
+All Permissions:
+
++ permission:android.permission.WRITE_SECURE_SETTINGS
+  package:android
+  label:null
+  description:null
+  protectionLevel:signature|privileged|development|installer|role
++ permission:android.permission.INSTALL_PACKAGES
+  package:android
+  label:null
+  description:null
+  protectionLevel:signature|privileged
++ permission:android.permission.MANAGE_USERS
+  package:android
+  label:null
+  description:null
+  protectionLevel:signature|privileged
++ permission:android.permission.INTERNET
+  package:android
+  label:have full network access
+  description:Allows the app to create network sockets and use customised network protocols. The browser and other applications provide means to send data to the Internet, so this permission is not required to send data to the Internet.
+  protectionLevel:normal|instant
++ permission:android.permission.BIND_ACCESSIBILITY_SERVICE
+  package:android
+  label:null
+  description:null
+  protectionLevel:signature
++ permission:android.permission.DELETE_PACKAGES
+  package:android
+  label:null
+  description:null
+  protectionLevel:signature|privileged|role
++ permission:com.google.android.gm.permission.READ_CONTENT_PROVIDER
+  package:com.google.android.gm
+  label:access email information
+  description:Allows the app to access information about your emails.
+  protectionLevel:dangerous
