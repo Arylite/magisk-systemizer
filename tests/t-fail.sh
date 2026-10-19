@@ -13,7 +13,11 @@ app; t_shim getprop 'exit 0'; t_cli doctor; t_out "no getprop is a warning" "can
 
 # ---- a failed copy changes nothing (transaction)
 app; t_shim cp 'exit 1'
-t_cli install $P; t_rc "copy failure" 1; t_nofile "no overlay" "$MOD/system/app/$P"; t_nofile "no state" "$MOD/state/$P.conf"; clean "copy failure"
+if "$T_SH" -c 'cp /dev/null "$0"' "$T_ROOT/cp-probe" 2> /dev/null; then
+  echo "SKIP copy failure: $T_SH runs cp as a built-in, a fake cp cannot replace it"
+else
+  t_cli install $P; t_rc "copy failure" 1; t_nofile "no overlay" "$MOD/system/app/$P"; t_nofile "no state" "$MOD/state/$P.conf"; clean "copy failure"
+fi
 app; mkdir -p "$MOD/.work/stage.1/x" "$MOD/.work/trash/y"
 t_cli install $P; t_rc "leftovers of a killed run" 0; clean "after leftovers"
 

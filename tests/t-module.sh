@@ -33,7 +33,9 @@ if [ -z "$PY" ]; then echo "SKIP zip checks: python 3 not found"; t_done; exit $
 Z=$T_ROOT/out/arylite.systemizer-v0.1.0.zip
 "$PY" "$REPO/build.py" --out "$T_ROOT/out" > /dev/null; t_eq "build" 0 "$?"; t_file "zip exists" "$Z"
 "$PY" "$REPO/build.py" --out "$T_ROOT/out2" > /dev/null; t_same "reproducible build" "$Z" "$T_ROOT/out2/arylite.systemizer-v0.1.0.zip"
-L=$(unzip -Z1 "$Z"); case $L in *\\*) t_bad "forward slashes only" "$L" ;; *) t_pass ;; esac
+zl() { "$PY" -c 'import sys,zipfile; sys.stdout.buffer.write(chr(10).join(zipfile.ZipFile(sys.argv[1]).namelist()).encode())' "$Z"; }
+zp() { "$PY" -c 'import sys,zipfile; sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read(sys.argv[2]))' "$Z" "$1"; }
+L=$(zl); case $L in *\\*) t_bad "forward slashes only" "$L" ;; *) t_pass ;; esac
 for f in module.prop customize.sh system/bin/systemizer lib/core.sh META-INF/com/google/android/update-binary; do
   case "
 $L
@@ -41,8 +43,8 @@ $L
 $f
 "*) t_pass ;; *) t_bad "zip contains $f" ;; esac; done
 case $L in *state/*|*.work*|*tests*) t_bad "no runtime or dev files in the zip" "$L" ;; *) t_pass ;; esac
-t_eq "updater-script" "#MAGISK" "$(unzip -p "$Z" META-INF/com/google/android/updater-script)"
-t_eq "module id" "id=arylite.systemizer" "$(unzip -p "$Z" module.prop | head -n 1)"
+t_eq "updater-script" "#MAGISK" "$(zp META-INF/com/google/android/updater-script)"
+t_eq "module id" "id=arylite.systemizer" "$(zp module.prop | head -n 1)"
 # the build refuses bad input
 bad() { rm -rf "$T_ROOT/b"; cp -R "$REPO/module" "$T_ROOT/b"; }
 bad; printf 'x\r\n' >> "$T_ROOT/b/lib/core.sh"; "$PY" "$REPO/build.py" --src "$T_ROOT/b" --out "$T_ROOT/o3" > /dev/null 2>&1; t_eq "CR is refused" 1 "$?"
