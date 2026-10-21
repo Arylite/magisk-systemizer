@@ -10,7 +10,7 @@ MODROOT=${NVBASE:-/data/adb}/modules
 OLD=$MODROOT/$MODID
 if [ "$BOOTMODE" = true ] && [ -d "$OLD" ]; then
   ui_print "- Keeping apps managed by the previous version"
-  for d in state system/app system/priv-app system/etc/permissions; do
+  for d in state bin system/app system/priv-app system/etc/permissions; do
     [ -d "$OLD/$d" ] || continue
     mkdir -p "$MODPATH/$d" || abort "! Cannot create $d"
     cp -a "$OLD/$d/." "$MODPATH/$d/" || abort "! Cannot copy $d from the previous version"

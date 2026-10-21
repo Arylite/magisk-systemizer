@@ -34,4 +34,15 @@ app; aapt 'bad name'; t_cli install --apk "$T_ROOT/other.apk"; t_rc "unreadable 
 app; aapt $N; t_cli install --apk "$T_ROOT/other.apk" --mode privileged; t_rc "privileged needs the app installed" 4
 app; aapt $P; t_cli install --apk "$T_ROOT/other.apk"; t_rc "aapt says installed app, other bytes" 5
 t_cli install --apk "$T_ROOT/copy.apk"; t_rc "aapt, identical bytes" 0
+
+# ---- the file is swapped by another app after it was checked (shared storage race)
+app; aapt $N; cp "$T_ROOT/other.apk" "$T_ROOT/orig.apk"
+t_shim aapt2 'printf "%s\n" "$AAPT_NAME"; printf "evil\n" > "$SWAP"'; SWAP=$T_ROOT/other.apk; export SWAP
+t_cli install --apk "$T_ROOT/other.apk"; t_rc "swapped after the check" 0
+t_same "the overlay holds the checked bytes" "$MOD/system/app/$N/base.apk" "$T_ROOT/orig.apk"
+
+# ---- without cmp, the forgeable cksum never proves identity
+app; SYSTEMIZER_NO_CMP=1; export SYSTEMIZER_NO_CMP
+t_cli install --apk "$T_ROOT/copy.apk" --package $P; t_rc "no cmp: identity unproven" 4; t_out "explains" "cmp is missing"
+t_nofile "nothing published" "$MOD/system/app/$P"; unset SYSTEMIZER_NO_CMP
 t_done

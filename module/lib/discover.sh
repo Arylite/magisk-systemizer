@@ -56,15 +56,20 @@ sz_apk_pkgname() { # apk -> the package name, or status 1
 sz_resolve_apk() {
   rs_apkname=
   case $in_apk in /*) ;; *) in_apk=$PWD/$in_apk ;; esac
+  in_src=$in_apk
   [ -f "$in_apk" ] && [ -r "$in_apk" ] || sz_die "$SZ_NOTFOUND" "APK not readable: $in_apk"
   case $in_apk in *.apk) ;; *) sz_die "$SZ_USAGE" "not an .apk file: $in_apk" ;; esac
+  # Every check and the overlay use one private copy: the original (often on shared
+  # storage, writable by other apps) could be swapped between the checks and the copy.
+  cp "$in_src" "$SZ_TMP/input.apk" || sz_die "$SZ_FAIL" "cannot copy $in_src"
+  in_apk=$SZ_TMP/input.apk
   if rs_apkname=$(sz_apk_pkgname "$in_apk"); then
     if [ -n "$in_name" ] && [ "$in_name" != "$rs_apkname" ]; then
       sz_die "$SZ_VERIFY" "the APK is package $rs_apkname, not $in_name"
     fi
     in_name=$rs_apkname
   elif [ -z "$in_name" ]; then
-    sz_die "$SZ_UNSUPPORTED" "cannot read the package name of $in_apk: no aapt/aapt2 found (put one in $SZ_MODDIR/bin or on PATH), or pass --package NAME for an app that is already installed"
+    sz_die "$SZ_UNSUPPORTED" "cannot read the package name of $in_src: no aapt/aapt2 found (put one in $SZ_MODDIR/bin; app directories are not searched as root), or pass --package NAME for an app that is already installed"
   fi
 }
 
@@ -84,7 +89,8 @@ sz_resolve_sources() {
       data|system)
         [ "$SZ_NPATHS" -eq 1 ] || sz_die "$SZ_VERIFY" "$in_name is installed as $SZ_NPATHS split APKs; --apk cannot represent it, use the package name"
         IFS= read -r rs_inst < "$SZ_TMP/paths"
-        sz_same "$in_apk" "$rs_inst" || sz_die "$SZ_VERIFY" "$in_apk differs from the installed APK of $in_name. A different build cannot be checked for signature compatibility: update the app normally (pm install -r), then use the package name"
+        [ -n "$SZ_CMP" ] || sz_die "$SZ_UNSUPPORTED" "cmp is missing: cksum cannot prove that $in_src is the installed APK (it is easy to forge), use the package name"
+        sz_same "$in_apk" "$rs_inst" || sz_die "$SZ_VERIFY" "$in_src differs from the installed APK of $in_name. A different build cannot be checked for signature compatibility: update the app normally (pm install -r), then use the package name"
         ;;
       none)
         [ -n "$rs_apkname" ] || sz_die "$SZ_UNSUPPORTED" "$in_name is not installed, so the APK identity cannot be checked without aapt/aapt2"

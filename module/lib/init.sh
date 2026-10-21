@@ -32,7 +32,7 @@ sz_cleanup() {
   [ -e "$SZ_TMP" ] && sz_safe_rm "$SZ_TMP"
   if [ "$SZ_LOCKED" = 1 ]; then
     sz_safe_rm "$SZ_WORK/stage.$$" "$SZ_WORK/trash"
-    rm -rf "$SZ_WORK/lock"
+    rm -f "$SZ_WORK/lock"
     SZ_LOCKED=0
   fi
 }
@@ -58,6 +58,7 @@ sz_detect() {
   if [ -n "$SYSTEMIZER_TESTING" ]; then # test hooks: a non-root shell cannot relabel files
     [ "${SYSTEMIZER_AAPT+set}" != set ] || { SZ_AAPT=$SYSTEMIZER_AAPT; SZ_AAPT_KIND=${SZ_AAPT##*/}; }
     [ -z "$SYSTEMIZER_NO_CHCON" ] || SZ_CHCON=
+    [ -z "$SYSTEMIZER_NO_CMP" ] || SZ_CMP=
   fi
 }
 

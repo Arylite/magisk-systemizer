@@ -49,8 +49,9 @@ sz_state_write() { # pkg mode source apks versioncode grants(comma list)
   mkdir -p "$SZ_STATE" || return 1
   sw_t=$SZ_P_STATE.tmp.$$
   printf 'schema=1\npackage=%s\nmode=%s\nsource=%s\napks=%s\nversioncode=%s\ngrants=%s\n' \
-    "$1" "$2" "$3" "$4" "$5" "$6" > "$sw_t" || return 1
-  mv -f "$sw_t" "$SZ_P_STATE"
+    "$1" "$2" "$3" "$4" "$5" "$6" > "$sw_t" || { rm -f "$sw_t"; return 1; }
+  mv -f "$sw_t" "$SZ_P_STATE" || { rm -f "$sw_t"; return 1; }
+  sync 2>/dev/null || :
 }
 
 sz_join_comma() { # file -> a,b,c

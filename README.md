@@ -18,11 +18,14 @@ Module id `arylite.systemizer` - [design and security review](docs/DESIGN.md) -
 - Android 5.0 (API 21) or newer, with `/system/app` (and `/system/priv-app` for privileged mode).
 - A root shell. Only POSIX tools every Android has are needed: `sh pm cp mv rm grep cmp|cksum`.
   Optional: `dumpsys` + `getprop` (privileged mode), `chcon` (SELinux label), `aapt2`/`aapt`
-  (`--apk` for an app that is not installed yet).
+  (`--apk` for an app that is not installed yet). As root the tool only searches
+  `/system/bin:/system/xbin:/vendor/bin:/debug_ramdisk:/sbin`, never the PATH of the terminal app
+  it was started from. So put `aapt2` in `/data/adb/modules/arylite.systemizer/bin/` (root-owned)
+  rather than in Termux.
 
 ## Install
 
-1. `python build.py` builds `dist/arylite.systemizer-v0.1.0.zip` (same bytes every time).
+1. `python build.py` builds `dist/arylite.systemizer-v0.2.0.zip` (same bytes every time).
 2. Magisk app > Modules > Install from storage > pick the zip > reboot.
 3. In a root shell (Termux + `su`, or `adb shell su`): `systemizer help`.
 
@@ -99,10 +102,17 @@ confirmation is needed.
    So this tool writes the XML itself: the permissions you pass with `--grant` are allowed, and
    every other privileged permission the app asks for is explicitly denied. Nothing is granted
    that you did not name. Privileged mode needs the app installed and is never the default.
+   Android 8.x has no deny element: on a device with `ro.control_privapp_permissions=enforce`
+   the tool refuses (exit 7) unless you `--grant` every privileged permission the app requests.
+   If the permission table cannot be read completely, privileged mode fails rather than guess.
 3. **Signature-only permissions** (no `privileged` flag): need the platform signing key. No
    allowlist can grant them and this tool never tries (`--grant` fails with exit 4).
 
-It never disables SELinux and never touches signature checks.
+It never disables SELinux and never touches signature checks. It refuses apps that are already
+system apps, including updates of preinstalled apps (which run from `/data`).
+
+`--apk` copies the file into the module's private work directory first and checks and installs
+only that copy, so another app cannot swap the file on shared storage during the run.
 
 ## Updating, removing, recovering
 
@@ -117,6 +127,15 @@ It never disables SELinux and never touches signature checks.
   and reboot (this disables only this module). `magisk --remove-modules` also works but removes
   ALL modules. Magisk safe mode disables modules too. This module has no boot script, so only
   the overlay content can affect booting.
+- **Interrupted command** (killed, crash, power cut): Ctrl-C is ignored while files are being
+  published. A run killed anyway leaves a stale lock and leftovers, and the next mutating command
+  cleans them up by itself. Then run `systemizer doctor` and `systemizer status`:
+  an overlay without state (`doctor` warning) is repaired by `systemizer install PACKAGE`, and a
+  `BROKEN` app by `systemizer remove PACKAGE --yes` and then `install`. An interrupted publish never
+  leaves a priv-app APK without its allowlist, and it can leave the app's directory missing,
+  which boots safely.
+- **Rollback to the previous module version**: install the older zip from the Magisk app (managed apps
+  are carried over), reboot. If the device does not boot: disable the module as above.
 - **After an app update** with a privileged app: run `systemizer status`. If the app now asks for a
   new privileged permission, `status` says so (exit 6) and `refresh` adds it to the denied list.
   Turn off automatic updates for privileged apps if you cannot check before each reboot.
@@ -130,7 +149,7 @@ sh tests/device-smoke.sh        # real phone over adb, in a scratch directory, n
 ```
 
 Contributions: see [CONTRIBUTING.md](CONTRIBUTING.md). Security reports: [SECURITY.md](SECURITY.md).
-Release: push a tag equal to the module version (`v0.1.0`); the release workflow tests, builds and
+Release: push a tag equal to the module version (`v0.2.0`); the release workflow tests, builds and
 attaches the zip and its checksum.
 
 Source layout: `module/system/bin/systemizer` is a short launcher; `module/lib/*.sh` hold the

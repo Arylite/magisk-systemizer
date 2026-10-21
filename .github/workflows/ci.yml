@@ -18,7 +18,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install ShellCheck 0.11.0 (pinned, because the runner image ships an older one)
         run: |
           curl -fsSL -o sc.tar.xz https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz
@@ -37,8 +39,10 @@ jobs:
     name: Tests (bash, dash, mksh, busybox ash)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Install the other shells (Android uses mksh; Magisk ships busybox ash)
@@ -55,8 +59,10 @@ jobs:
     needs: [lint, test]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
       - name: Build twice and compare (the build must be reproducible)
@@ -67,7 +73,7 @@ jobs:
           (cd dist && sha256sum ./*.zip | tee SHA256SUMS)
       # Artifact storage can run out on a free account; the build and the reproducibility
       # check above are what matter, and releases attach the zip without this storage.
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         continue-on-error: true
         with:
           name: module-zip

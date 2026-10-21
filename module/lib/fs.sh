@@ -43,23 +43,28 @@ sz_swap() { # new target
 }
 
 # One mutating command at a time; also clears what a killed run left behind.
+# The lock is a hard link to a file that already holds our pid, so it appears
+# atomically and complete: no window where another run reads an empty pid.
 sz_lock() {
   mkdir -p "$SZ_WORK" || sz_die "$SZ_FAIL" "cannot create $SZ_WORK"
-  if ! mkdir "$SZ_WORK/lock" 2>/dev/null; then
-    lk_pid=$(cat "$SZ_WORK/lock/pid" 2>/dev/null)
+  lk_f=$SZ_WORK/lock.$$
+  printf '%s\n' "$$" > "$lk_f" || sz_die "$SZ_FAIL" "cannot write $lk_f"
+  [ ! -d "$SZ_WORK/lock" ] || rm -rf "$SZ_WORK/lock" # lock directory of v0.1.0, never live here
+  if ! ln "$lk_f" "$SZ_WORK/lock" 2>/dev/null; then
+    lk_pid=$(cat "$SZ_WORK/lock" 2>/dev/null)
     if [ -n "$lk_pid" ] && kill -0 "$lk_pid" 2>/dev/null; then
-      sz_die "$SZ_FAIL" "another systemizer command is running (pid $lk_pid)"
+      rm -f "$lk_f"; sz_die "$SZ_FAIL" "another systemizer command is running (pid $lk_pid)"
     fi
     sz_warn "removing a stale lock"
-    rm -rf "$SZ_WORK/lock"
-    mkdir "$SZ_WORK/lock" || sz_die "$SZ_FAIL" "cannot take the lock"
+    rm -f "$SZ_WORK/lock"
+    ln "$lk_f" "$SZ_WORK/lock" 2>/dev/null || { rm -f "$lk_f"; sz_die "$SZ_FAIL" "cannot take the lock"; }
   fi
-  printf '%s\n' "$$" > "$SZ_WORK/lock/pid"
+  rm -f "$lk_f"
   SZ_LOCKED=1
   for lk_d in "$SZ_WORK"/stage.* "$SZ_WORK"/trash; do
     [ -e "$lk_d" ] && sz_safe_rm "$lk_d"
   done
-  for lk_d in "$SZ_WORK"/tmp.*; do # read-only commands take no lock: keep live ones
+  for lk_d in "$SZ_WORK"/tmp.* "$SZ_WORK"/lock.*; do # read-only commands take no lock: keep live ones
     [ -e "$lk_d" ] && ! kill -0 "${lk_d##*.}" 2>/dev/null && sz_safe_rm "$lk_d"
   done
   return 0

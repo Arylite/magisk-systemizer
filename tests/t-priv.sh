@@ -39,8 +39,14 @@ priv $IP; t_prop ro.build.version.sdk 25
 t_cli install $P --mode privileged --grant $IP; t_rc "grant before Android 8" 4
 t_cli install $P --mode privileged; t_rc "plain priv-app before Android 8" 0; t_nofile "no allowlist mechanism" "$X"
 priv $IP $MU; t_prop ro.build.version.sdk 27
-t_cli install $P --mode privileged --grant $IP; t_rc "Android 8.1" 0
+t_cli install $P --mode privileged --grant $IP; t_rc "Android 8.1, enforce, a permission left ungranted" 7
+t_out "explains" "cannot deny"; t_nofile "nothing published" "$MOD/system/priv-app/$P"; t_nofile "no allowlist" "$X"
+t_cli install $P --mode privileged --grant $IP --grant $MU; t_rc "Android 8.1, everything granted" 0
 t_grep "grant written" "<permission name=\"$IP\"/>" "$X"; t_nogrep "no deny element before Android 9" deny-permission "$X"
+t_dump $P 1 $IP $MU $WS; t_cli status $P; t_rc "Android 8.1 drift" 6; t_out "names it" "$WS"
+t_cli refresh $P; t_rc "refresh cannot deny it either" 7; t_nogrep "allowlist unchanged" "$WS" "$X"
+priv $IP $MU; t_prop ro.build.version.sdk 27; t_prop ro.control_privapp_permissions log
+t_cli install $P --mode privileged --grant $IP; t_rc "Android 8.1, log mode" 0; t_nogrep "no deny" deny-permission "$X"
 priv $NET; t_cli install $P --mode privileged; t_rc "no privileged permission asked" 0; t_nofile "no allowlist needed" "$X"
 
 # ---- environment problems
@@ -50,6 +56,15 @@ priv $IP; : > "$FAKE/permissions"; t_cli install $P --mode privileged; t_rc "emp
 t_nofile "failed install leaves no overlay" "$MOD/system/priv-app/$P"
 priv $IP; t_prop ro.control_privapp_permissions disable; t_cli install $P --mode privileged; t_rc "allowlist ignored by device" 0
 t_out "warns" "grants every privileged permission"
+# a protection level the grep window misses must stop the install, not drop the deny
+RB=android.permission.REBOOT # not in the fixture: this entry is its only definition
+priv $IP $RB; { printf '+ permission:%s\n  package:android\n' $RB
+  i=0; while [ $i -lt 14 ]; do printf 'description line %s\n' $i; i=$((i + 1)); done
+  printf '  protectionLevel:signature|privileged\n'; cat "$FAKE/permissions"; } > "$FAKE/p2"
+mv "$FAKE/p2" "$FAKE/permissions"; t_cli install $P --mode privileged; t_rc "unparsed protection level" 1
+t_nofile "nothing published" "$MOD/system/priv-app/$P"
+priv $IP; t_cli install $P --mode privileged; t_shim dumpsys 'exit 0'
+t_cli status $P; t_rc "status cannot check the allowlist" 1; t_out "says so" UNKNOWN
 
 # ---- the app changes after install: drift is reported and refresh repairs it
 priv $IP; t_cli install $P --mode privileged; t_dump $P 1 $IP $WS
@@ -58,4 +73,15 @@ t_cli refresh $P; t_rc "refresh repairs the allowlist" 0; t_grep "new permission
 t_cli status $P; t_rc "clean again" 0
 t_app $P 2 1 $NET; t_cli refresh $P; t_rc "update drops its privileged permissions" 0
 t_nofile "allowlist removed when not needed" "$X"; t_file "app updated" "$MOD/system/priv-app/$P/base.apk"
+
+# ---- the APKs cannot be published: their old allowlist comes back with them
+priv $IP; t_cli install $P --mode privileged; cp "$X" "$T_ROOT/x.old"; t_app $P 2 1 $IP $WS
+REAL_MV=$(command -v mv); export REAL_MV
+t_shim mv 'case $1 in */stage.*/app) exit 1 ;; esac; exec "$REAL_MV" "$@"'
+if [ "$("$T_SH" -c 'command -v mv')" != "$T_ROOT/bin/mv" ]; then
+  echo "SKIP allowlist rollback: $T_SH runs mv as a built-in"
+else
+  t_cli refresh $P; t_rc "publish fails" 1; t_same "old allowlist restored" "$X" "$T_ROOT/x.old"
+  t_nogrep "old APK kept" "v2" "$MOD/system/priv-app/$P/base.apk"
+fi
 t_done

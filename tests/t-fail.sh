@@ -55,9 +55,26 @@ app; touch "$MOD/disable"; t_cli install $P; t_rc "module disabled" 0; t_out "wa
 t_cli status $P; t_out "status says inactive" "module disabled"; t_cli doctor; t_out "doctor sees the flag" "flag file present: disable"
 
 # ---- lock
-app; mkdir -p "$MOD/.work/lock"; echo $$ > "$MOD/.work/lock/pid"
+app; mkdir -p "$MOD/.work"; echo $$ > "$MOD/.work/lock"
 t_cli install $P; t_rc "live lock" 1; t_out "names the cause" "another systemizer"; t_nofile "nothing published" "$MOD/system/app/$P"
-echo 999999 > "$MOD/.work/lock/pid"; t_cli install $P; t_rc "stale lock" 0; clean "stale lock"
+t_eq "live lock kept" $$ "$(cat "$MOD/.work/lock")"
+echo 999999 > "$MOD/.work/lock"; echo 999999 > "$MOD/.work/lock.999999"
+t_cli install $P; t_rc "stale lock" 0; clean "stale lock"
+app; mkdir -p "$MOD/.work/lock"; echo 999999 > "$MOD/.work/lock/pid"
+t_cli install $P; t_rc "v0.1.0 lock directory" 0; clean "v0.1.0 lock directory"
+
+# ---- root ignores the caller's environment: no test hooks, no inherited PATH
+app; mkdir -p "$T_ROOT/evil/lib"; printf 'id=arylite.systemizer\n' > "$T_ROOT/evil/module.prop"
+printf 'touch "%s"\n' "$T_ROOT/pwned" > "$T_ROOT/evil/lib/core.sh"
+SYSTEMIZER_MODDIR=$T_ROOT/evil; CLI_MOD=$MOD/system/bin/systemizer
+"$T_SH" "$CLI_MOD" version > /dev/null 2>&1; t_file "control: hooks work for a non-root user" "$T_ROOT/pwned"
+rm -f "$T_ROOT/pwned"; t_shim id 'echo 0'; "$T_SH" "$CLI_MOD" version > /dev/null 2>&1
+t_nofile "root: SYSTEMIZER_MODDIR is ignored" "$T_ROOT/pwned"
+t_shim id 'echo'; "$T_SH" "$CLI_MOD" version > /dev/null 2>&1; t_nofile "unknown uid counts as root" "$T_ROOT/pwned"
+
+# ---- an update of a preinstalled app is never shadowed
+app; sed 's/flags=\[ HAS_CODE \]/flags=[ SYSTEM HAS_CODE UPDATED_SYSTEM_APP ]/' "$FAKE/dump.$P" > "$FAKE/d" && mv "$FAKE/d" "$FAKE/dump.$P"
+t_cli install $P; t_rc "updated system app" 7; t_out "explains" "preinstalled"; t_nofile "nothing published" "$MOD/system/app/$P"
 
 # ---- another module already ships the package
 app; mkdir -p "$T_ROOT/mod2/system/app/$P"; printf 'id=other.module\n' > "$T_ROOT/mod2/module.prop"

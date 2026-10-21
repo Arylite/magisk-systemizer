@@ -30,11 +30,15 @@ sz_priv_plan() { # pkg "grants" [lenient]
     fi
     sz_die "$SZ_USAGE" "$1 does not request $pl_g"
   done
-  if [ "$SZ_SDK" -ge 28 ]; then
-    while IFS= read -r pl_p; do
-      grep -Fxq -- "$pl_p" "$SZ_TMP/g.list" || printf '%s\n' "$pl_p" >> "$SZ_TMP/d.list"
-    done < "$SZ_TMP/priv.list"
-  fi
+  while IFS= read -r pl_p; do
+    grep -Fxq -- "$pl_p" "$SZ_TMP/g.list" && continue
+    # Android 8 has no deny element, and under enforce an unlisted privileged
+    # permission can stop the boot: refuse instead of writing a partial allowlist.
+    if [ "$SZ_SDK" -lt 28 ] && [ "$SZ_PRIVPROP" = enforce ]; then
+      sz_die "$SZ_REFUSED" "$1 requests $pl_p: Android 8 cannot deny it and this device enforces the allowlist (boot risk). Grant every privileged permission it requests, or use system mode"
+    fi
+    [ "$SZ_SDK" -lt 28 ] || printf '%s\n' "$pl_p" >> "$SZ_TMP/d.list"
+  done < "$SZ_TMP/priv.list"
   if [ -s "$SZ_TMP/g.list" ] || [ -s "$SZ_TMP/d.list" ]; then SZ_XML_NEEDED=1; fi
   sz_say "Privileged permissions requested: $(grep -c '' "$SZ_TMP/priv.list")  granted: $(grep -c '' "$SZ_TMP/g.list")  denied: $(grep -c '' "$SZ_TMP/d.list")"
   sz_list_perms granted "$SZ_TMP/g.list"; sz_list_perms denied "$SZ_TMP/d.list"
@@ -68,15 +72,24 @@ sz_priv_load() { # pkg
     grep -F -x -A12 -f "$SZ_TMP/perms.pat" "$SZ_TMP/perms.raw" > "$SZ_TMP/perms.sub"
   fi
   sz_parse_perms "$SZ_TMP/perms.sub" "$SZ_TMP/permlevels" # empty when nothing requested matches
+  # Fail closed: a defined permission whose level fell outside the grep window would
+  # otherwise be missed, left out of the deny list, and could stop the boot.
+  pl_have=" "
+  while IFS=' ' read -r pl_n pl_l; do pl_have="$pl_have$pl_n "; done < "$SZ_TMP/permlevels"
+  while IFS= read -r pl_q; do
+    case $pl_have in *" $pl_q "*) continue ;; esac
+    grep -Fxq -e "+ permission:$pl_q" -e "permission:$pl_q" -e "  permission:$pl_q" "$SZ_TMP/perms.sub" && return 1
+  done < "$SZ_TMP/reqperms"
   sz_priv_scan
 }
 
 # Privileged app that now asks for a privileged permission its allowlist does not
-# mention: on an enforcing Android 9+ device that can stop the next boot.
-sz_priv_drift() { # pkg ; 0 = drift (sets SZ_DRIFT_PERM)
-  [ -n "$SZ_SDK" ] && [ "$SZ_SDK" -ge 28 ] || return 1
-  sz_have dumpsys || return 1
-  sz_priv_load "$1" || return 1
+# mention: on an enforcing Android 8+ device that can stop the next boot.
+sz_priv_drift() { # pkg ; 0 = drift (sets SZ_DRIFT_PERM), 1 = none, 2 = cannot tell
+  [ -n "$SZ_SDK" ] || return 2
+  [ "$SZ_SDK" -ge 28 ] || { [ "$SZ_SDK" -ge 26 ] && [ "$SZ_PRIVPROP" = enforce ]; } || return 1
+  sz_have dumpsys || return 2
+  sz_priv_load "$1" || return 2
   while IFS= read -r pd2_p; do
     [ -f "$SZ_P_XML" ] && grep -Fq "\"$pd2_p\"" "$SZ_P_XML" && continue
     SZ_DRIFT_PERM=$pd2_p

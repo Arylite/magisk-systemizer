@@ -14,11 +14,12 @@ solution, the command, and what an attacker gains. You will get an answer within
 - Grants or allowlist entries the user did not ask for, or a way around the signature-level refusal.
 - Injection through package names, permission names, `--apk` paths, or state files.
 - Anything that can leave a device unable to boot without an obvious recovery.
+- Influence of the caller's environment on a root run. As root the tool ignores the `SYSTEMIZER_*`
+  test hooks, `CDPATH` and the inherited `PATH` (it uses `/system/bin:/system/xbin:/vendor/bin:/debug_ramdisk:/sbin`).
 
 ## Out of scope
 
-- Behaviour that needs a hostile root shell environment (the `SYSTEMIZER_*` test hooks only exist
-  when `SYSTEMIZER_TESTING` is set, and a root shell with a hostile environment is already lost).
+- An attacker who already runs code as root, or can write to `/data/adb`.
 - Problems in Magisk, Android, or in the apps you choose to systemize.
 
 The design and threat review lives in [docs/DESIGN.md](docs/DESIGN.md#6-security-review).

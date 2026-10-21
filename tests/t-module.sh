@@ -11,6 +11,7 @@ OLD=$T_ROOT/adb/modules/arylite.systemizer
 mkdir -p "$OLD/state" "$OLD/system/app/com.x.y" "$OLD/system/priv-app/com.p.q" "$OLD/system/etc/permissions"
 echo 'schema=1' > "$OLD/state/com.x.y.conf"; echo apk > "$OLD/system/app/com.x.y/base.apk"
 echo apk > "$OLD/system/priv-app/com.p.q/base.apk"; echo xml > "$OLD/system/etc/permissions/privapp-permissions-com.p.q.xml"
+mkdir -p "$OLD/bin"; echo tool > "$OLD/bin/aapt2"; chmod 755 "$OLD/bin/aapt2"
 run_customize() { # BOOTMODE API
   rm -rf "$T_ROOT/new" "$T_ROOT/log" "$T_ROOT/abort" "$T_ROOT/perm"; mkdir -p "$T_ROOT/new"
   MODPATH=$T_ROOT/new MODID=arylite.systemizer NVBASE=$T_ROOT/adb BOOTMODE=$1 API=$2
@@ -21,6 +22,7 @@ t_file "state carried over" "$T_ROOT/new/state/com.x.y.conf"
 t_file "app overlay carried over" "$T_ROOT/new/system/app/com.x.y/base.apk"
 t_file "priv-app carried over" "$T_ROOT/new/system/priv-app/com.p.q/base.apk"
 t_file "allowlist carried over" "$T_ROOT/new/system/etc/permissions/privapp-permissions-com.p.q.xml"
+t_file "user-supplied aapt2 carried over" "$T_ROOT/new/bin/aapt2"
 t_nofile "no abort on a normal upgrade" "$T_ROOT/abort"; t_grep "labels restored" system_file "$T_ROOT/perm"
 t_grep "tells where the CLI is" "systemizer help" "$T_ROOT/log"
 run_customize false 33; t_nofile "recovery flash copies nothing" "$T_ROOT/new/state"; t_grep "recovery warning" "not kept" "$T_ROOT/log"
@@ -30,9 +32,9 @@ rm -rf "$OLD"; run_customize true 33; t_nofile "first install has nothing to car
 # ---- the ZIP (needs python 3; skipped otherwise)
 PY=; for c in python3 python; do "$c" -c 'import zipfile' > /dev/null 2>&1 && { PY=$c; break; }; done
 if [ -z "$PY" ]; then echo "SKIP zip checks: python 3 not found"; t_done; exit $?; fi
-Z=$T_ROOT/out/arylite.systemizer-v0.1.0.zip
+V=$(sed -n "s/^version=//p" "$REPO/module/module.prop"); Z=$T_ROOT/out/arylite.systemizer-$V.zip
 "$PY" "$REPO/build.py" --out "$T_ROOT/out" > /dev/null; t_eq "build" 0 "$?"; t_file "zip exists" "$Z"
-"$PY" "$REPO/build.py" --out "$T_ROOT/out2" > /dev/null; t_same "reproducible build" "$Z" "$T_ROOT/out2/arylite.systemizer-v0.1.0.zip"
+"$PY" "$REPO/build.py" --out "$T_ROOT/out2" > /dev/null; t_same "reproducible build" "$Z" "$T_ROOT/out2/arylite.systemizer-$V.zip"
 zl() { "$PY" -c 'import sys,zipfile; sys.stdout.buffer.write(chr(10).join(zipfile.ZipFile(sys.argv[1]).namelist()).encode())' "$Z"; }
 zp() { "$PY" -c 'import sys,zipfile; sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read(sys.argv[2]))' "$Z" "$1"; }
 L=$(zl); case $L in *\\*) t_bad "forward slashes only" "$L" ;; *) t_pass ;; esac

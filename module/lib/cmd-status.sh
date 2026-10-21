@@ -28,9 +28,14 @@ sz_status_one() { # pkg verbose
     stale) st_state="STALE: the installed APK differs from the overlay. Run: systemizer refresh $1"; st_res=6 ;;
     *) st_state="BROKEN: overlay files are missing. Run: systemizer remove $1 --yes, then install again"; st_res=1 ;;
   esac
-  if [ "$SZ_S_MODE" = privileged ] && [ "$2" = 1 ] && [ $st_res -eq 0 ] && sz_priv_drift "$1"; then
-    st_state="STALE: the app now requests $SZ_DRIFT_PERM, missing from its allowlist (boot risk). Run: systemizer refresh $1"
-    st_res=6
+  if [ "$SZ_S_MODE" = privileged ] && [ "$2" = 1 ] && [ $st_res -eq 0 ]; then
+    sz_priv_drift "$1"
+    case $? in
+      0) st_state="STALE: the app now requests $SZ_DRIFT_PERM, missing from its allowlist (boot risk). Run: systemizer refresh $1"
+         st_res=6 ;;
+      2) st_state="UNKNOWN: cannot read the permissions the app requests (dumpsys / pm); the allowlist was not checked"
+         st_res=1 ;;
+    esac
   fi
   if [ "$2" != 1 ]; then sz_say "$1  $SZ_S_MODE  $st_state"; return $st_res; fi
   sz_say "Package:    $1"

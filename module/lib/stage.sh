@@ -26,18 +26,26 @@ sz_stage() { # pkg  (APKs listed in $SZ_TMP/paths, XML plan from sz_priv_plan)
 # Publish the staged payload. The allowlist goes in before the APKs and comes out
 # after them, so a priv-app APK is never visible without its allowlist.
 sz_commit() { # pkg mode
+  # From here to the end of the command, Ctrl-C or a hangup must not interrupt the
+  # renames and the state write half way (the EXIT trap would empty the trash).
+  trap '' INT TERM HUP
   sz_modedir "$1" "$2"
   if [ "$2" = privileged ]; then sc_other=$SZ_P_APP; else sc_other=$SZ_P_PRIV; fi
   sz_ensure_dir "$SZ_OVL/$SZ_P_SUB" || return 1
-  sc_xml=0
+  sc_xml=0 sc_oldxml=
   if [ -f "$SZ_STG/perm.xml" ]; then
     sc_xml=1
     sz_ensure_dir "$SZ_OVL/etc" && sz_ensure_dir "$SZ_OVL/etc/permissions" || return 1
     sz_swap "$SZ_STG/perm.xml" "$SZ_P_XML" || return 1
+    sc_oldxml=${sw_old:-none}
   fi
-  sz_swap "$SZ_STG/app" "$SZ_P_DIR" || return 1
+  if ! sz_swap "$SZ_STG/app" "$SZ_P_DIR"; then # the old APKs stay: so must their allowlist
+    case $sc_oldxml in '') ;; none) rm -f "$SZ_P_XML" ;; *) mv -f "$sc_oldxml" "$SZ_P_XML" ;; esac
+    return 1
+  fi
   [ ! -e "$sc_other" ] || sz_safe_rm "$sc_other" || return 1
   if [ $sc_xml -eq 0 ] && [ -e "$SZ_P_XML" ]; then sz_safe_rm "$SZ_P_XML" || return 1; fi
+  sync 2>/dev/null # a power cut before the reboot must not leave empty APKs in the overlay
   return 0
 }
 

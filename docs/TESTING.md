@@ -34,12 +34,28 @@ output. Mutating the code (for example making the byte comparison always succeed
 | Interrupted run leftovers, stale and live lock, other module clash | `t-fail` | executed |
 | SELinux enforcing with a failing `chcon` is fatal, permissive is not | `t-fail` | executed with fakes; real labels **not executed** |
 | Magisk upgrade path (`customize.sh`), zip structure, reproducible build, build refusals | `t-module` | executed with stubbed Magisk functions |
+| `--apk` swapped on shared storage after the check (aapt shim rewrites the original) | `t-apk` | executed |
+| `--apk` identity without `cmp` refused (`SYSTEMIZER_NO_CMP`) | `t-apk` | executed |
+| Root ignores `SYSTEMIZER_*` hooks (fake `id` = 0, and unknown uid) | `t-fail` | executed; the fixed root `PATH` itself only runs on a device: **not executed** |
+| Lock as a hard link: live, stale, leftover `lock.<pid>`, v0.1.0 lock directory | `t-fail` | executed |
+| Update of a preinstalled app (`UPDATED_SYSTEM_APP`) refused | `t-fail` | executed |
+| Protection level outside the grep window: privileged install fails closed | `t-priv` | executed |
+| Android 8.1 + `enforce`: partial allowlist refused, full grant accepted, drift, refresh refused; `log` mode | `t-priv` | executed (simulated properties) |
+| `status` with unreadable permissions says `UNKNOWN` | `t-priv` | executed |
+| APK rename fails during refresh: previous allowlist restored | `t-priv` | executed (fake `mv`) |
+| Upgrade keeps `bin/aapt2` | `t-module` | executed |
+| Ctrl-C ignored while publishing; `sync` | none | **not executed** (no automated signal test) |
 | Source hygiene: 150-line limit, ASCII, LF, no `eval`/`local`/`[[`, `-n` syntax check | `run.sh` | executed |
 | ShellCheck 0.11.0 on the module code (clean), actionlint 1.7.12 on the workflows (clean) | CI `lint` job | executed locally; CI also runs them |
 | mksh and busybox ash on Linux | CI `test` job (`SHELLS="bash dash mksh bbsh"`) | runs in CI; not available on the development machine |
 
-Result of the last full run (bash 5.3 and dash, Windows Git Bash): per shell,
-unit 74, cli 83, failures 55, apk 28, privileged 55, module 28 checks, all passing.
+Result of the last full run, v0.2.0 (bash 5.3 and dash, Windows Git Bash, 2026-10-19): per shell,
+unit 74, cli 83, failures 64, apk 33, privileged 74, module 29 checks, all passing. Each security
+fix was mutation-checked: reverting it makes its new tests fail. ShellCheck 0.11.0 (via
+`shellcheck-py`) and actionlint 1.7.12 (via `actionlint-py`) were clean on this tree.
+
+**v0.2.0 has not been run on a phone** (tiers 2 and 3 below were run on v0.1.0). Before relying
+on it, repeat tier 2 and at least the tier 3 install, privileged and upgrade steps.
 The fake `pm` and `dumpsys` only write to a pipe, like system_server under SELinux (see below).
 
 ## Tier 2 - phone sandbox

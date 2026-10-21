@@ -21,7 +21,8 @@ sz_refresh_one() { # pkg
   rf_mode=$SZ_S_MODE rf_grants=$SZ_S_GRANTLIST rf_src=$SZ_S_SOURCE
   sz_fresh "$1"
   if [ "$SZ_FRESH" = fresh ]; then # APKs equal, but the allowlist may have fallen behind
-    if [ "$rf_mode" != privileged ] || ! sz_priv_drift "$1"; then sz_say "$1: up to date"; return 0; fi
+    if [ "$rf_mode" != privileged ]; then sz_say "$1: up to date"; return 0; fi
+    sz_priv_drift "$1"; [ $? -ne 1 ] || { sz_say "$1: up to date"; return 0; } # 2: re-plan, which fails loudly
   fi
   sz_priv_reset
   if [ "$rf_mode" = privileged ]; then sz_priv_plan "$1" "$rf_grants" 1; fi

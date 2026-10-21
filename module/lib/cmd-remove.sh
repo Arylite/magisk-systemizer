@@ -25,6 +25,7 @@ cmd_remove() {
     sz_confirm "Remove it anyway?"
   fi
   mkdir -p "$SZ_WORK/trash" || sz_die "$SZ_FAIL" "cannot create the trash directory"
+  trap '' INT TERM HUP # do not stop between the APKs and their allowlist
   rm_i=0
   # Renames are atomic. APK directories go first, the allowlist after them.
   for rm_t in "$SZ_P_APP" "$SZ_P_PRIV" "$SZ_P_XML" "$SZ_P_STATE"; do
@@ -32,5 +33,6 @@ cmd_remove() {
     rm_i=$((rm_i + 1))
     mv "$rm_t" "$SZ_WORK/trash/rm.$rm_i" || sz_die "$SZ_FAIL" "cannot remove $rm_t"
   done
+  sync 2>/dev/null
   sz_say "Removed $rm_pkg from the overlay. Reboot to apply. Its app data is untouched by this tool."
 }

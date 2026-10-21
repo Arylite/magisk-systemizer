@@ -9,6 +9,15 @@ SZ_LIBS="core state parse xml fs discover interact priv stage init
 sz_self=.
 case $0 in */*) sz_self=${0%/*} ;; esac
 
+# Root never trusts the caller's environment: su keeps the caller's PATH (a terminal
+# app's PATH is writable by that app), CDPATH can redirect cd, and the test hooks
+# below would choose the code that runs. Unknown uid counts as root.
+unset CDPATH
+sz_uid=$( (/system/bin/id -u || id -u) 2>/dev/null)
+case $sz_uid in ''|0) unset SYSTEMIZER_TESTING ;; esac
+[ -n "$SYSTEMIZER_TESTING" ] || PATH=/system/bin:/system/xbin:/vendor/bin:/debug_ramdisk:/sbin
+export PATH
+
 sz_try_mod() {
   [ -f "$1/module.prop" ] && [ -r "$1/lib/core.sh" ] && grep -qx "id=$SZ_ID" "$1/module.prop"
 }
@@ -23,7 +32,7 @@ else
 fi
 if [ -z "$SZ_MODDIR" ]; then
   sz_mp=$(magisk --path 2>/dev/null)
-  for sz_c in "${NVBASE:-/data/adb}/modules/$SZ_ID" "$sz_mp/.magisk/modules/$SZ_ID"; do
+  for sz_c in "/data/adb/modules/$SZ_ID" "$sz_mp/.magisk/modules/$SZ_ID"; do
     if sz_try_mod "$sz_c"; then SZ_MODDIR=$sz_c; break; fi
   done
 fi

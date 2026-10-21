@@ -71,6 +71,13 @@ cmd_install() {
   fi
   if [ -e "$SZ_P_APP" ] || [ -e "$SZ_P_PRIV" ] || [ -e "$SZ_P_XML" ]; then
     sz_warn "found an incomplete overlay for $in_name from an interrupted run; it will be replaced"
+  elif sz_have dumpsys && sz_capture "$SZ_TMP/dump.raw" dumpsys package "$in_name" \
+    && sz_parse_dump "$SZ_TMP/dump.raw" "$in_name"; then
+    # An updated preinstalled app runs from /data, so pm path hides its system copy;
+    # a second copy in the overlay would duplicate the package (and its allowlist).
+    case " $SZ_D_FLAGS " in *" SYSTEM "*|*" UPDATED_SYSTEM_APP "*)
+      sz_die "$SZ_REFUSED" "$in_name is an update of a preinstalled system app; this module does not shadow it" ;;
+    esac
   fi
   sz_conflicts "$in_name"
   sz_modedir "$in_name" "$in_mode"

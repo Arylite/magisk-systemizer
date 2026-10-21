@@ -21,7 +21,7 @@
 | Android | Privileged permissions of a `priv-app` app | What this tool does |
 |---|---|---|
 | 5.0 - 7.1 | all granted automatically | no XML; `--grant` is refused (exit 4) as meaningless |
-| 8.0 - 8.1 | only those named in `/system/etc/permissions/*.xml`; others not granted | XML with the `--grant` list; no deny element exists |
+| 8.0 - 8.1 | only those named in `/system/etc/permissions/*.xml`; others not granted (under `enforce`, an unlisted one may stop the boot) | XML with the `--grant` list; no deny element exists, so under `enforce` every requested privileged permission must be granted or the tool refuses (exit 7) |
 | 9+ | same, and an unlisted permission can stop the boot when `ro.control_privapp_permissions=enforce` | XML with grants plus an explicit `deny-permission` for every other privileged permission requested |
 
 Source: the AOSP privileged-permission allowlist documentation. This is documented behaviour; only
@@ -51,7 +51,7 @@ API 36 (one Pixel 10a) was exercised (see TESTING.md).
   priv-app APK is never visible without its allowlist.
 - **No boot work**: no `post-fs-data.sh`, `service.sh` or `uninstall.sh`. Everything lives inside the
   module directory, so Magisk removing the module removes all of it.
-- **Module upgrade**: `customize.sh` copies `state/` and the overlay directories from the old
+- **Module upgrade**: `customize.sh` copies `state/`, `bin/` and the overlay directories from the old
   module (Magisk wipes the new one first). While an upgrade is pending (`update` marker), mutating
   commands refuse, since the pending copy would replace the change.
 - **Stale detection**: `status` and `refresh` compare the installed APKs with the overlay byte for
@@ -72,6 +72,12 @@ API 36 (one Pixel 10a) was exercised (see TESTING.md).
   name. A different build of an installed app is refused: its signature cannot be checked without
   extra tools, and a signature mismatch can make Android discard the app data.
 - Without `aapt`, the tool says what is missing and exits 4. It never guesses.
+- The file is first copied into the private work directory; `aapt`, the byte comparison and the
+  overlay all use that copy, so a file on shared storage cannot be swapped between check and use.
+- The byte comparison that proves identity needs `cmp`; the `cksum` fallback (CRC32, easy to
+  forge) is only used to verify copies, never to prove identity.
+- An app whose `dumpsys` flags say `SYSTEM` or `UPDATED_SYSTEM_APP` (an update of a preinstalled
+  app; `pm path` only shows its `/data` copy) is refused: a second system copy would duplicate it.
 
 ## 4. Compatibility matrix (what was actually validated)
 
@@ -102,6 +108,14 @@ verified through a real boot on one device. Other devices, ROMs and a refresh af
 - Recovery-flash upgrades lose the managed apps (Magisk wipes the module first).
 - Dynamic features, APEX packages and apps with a `sharedUserId` shared with a system app are not
   specially handled.
+- No free-space check: the overlay duplicates the APKs on `/data`, and root may use the blocks the
+  filesystem reserves for the system. A failed copy is removed at once; a huge app on a nearly full
+  phone can still leave `/data` very low until it is removed.
+- A power cut in the middle of publishing (after `sync` was not reached) can leave the app's
+  overlay directory missing: boot-safe, reported by `status` / `doctor`, repaired by `install`.
+- `aapt`/`aapt2` (only for `--apk` of an app that is not installed) parses the untrusted APK as root.
+- Two runs that both find the same stale lock at the same instant could both take it (needs a
+  killed run plus two simultaneous starts).
 
 ## 6. Security review
 
@@ -112,9 +126,12 @@ verified through a real boot on one device. Other devices, ROMs and a refresh af
 | Deletion | `rm -rf` on computed paths | `sz_safe_rm` only deletes below the work directory, the two overlay directories, the allowlist directory (with the `privapp-permissions-` prefix) and `state/*.conf`; `..` is refused |
 | State files | corrupt or hostile `state/*.conf` | parsed by key, never sourced; every field validated; `remove` ignores it |
 | XML | injection or malformed output | names limited to `[A-Za-z0-9._]`; output re-read by `sz_xml_ok`, which accepts only the exact generated shape with at least one entry |
-| Environment | test hooks redirect paths | honoured only when `SYSTEMIZER_TESTING` is set; never set it on a device (a root shell with a hostile environment is already compromised) |
-| Races | two commands, or a file replaced during copy | lock directory with a pid (stale locks detected); every copy is compared with its source and the command aborts on mismatch |
-| Other modules | clash on the same package | refused when another enabled module ships `system/(priv-)app/<pkg>`; no other module is ever modified |
+| Environment | `su` keeps the caller's `PATH` (e.g. Termux's, writable by that app); test hooks redirect the code and paths | as root (or when the uid is unknown): fixed `PATH=/system/bin:/system/xbin:/vendor/bin:/debug_ramdisk:/sbin`, `CDPATH` unset, `SYSTEMIZER_*` hooks ignored, `NVBASE` not read |
+| Races | two commands; a file replaced during copy; `--apk` swapped on shared storage | lock = hard link to a file already holding the pid (atomic, never empty; stale locks detected); every copy is compared with its source; `--apk` is checked and installed from one private copy |
+| Interruption | Ctrl-C / hangup between renames | INT, TERM and HUP are ignored from the first rename until the state is written; if the APK rename fails, the previous allowlist is put back; `sync` after publishing |
+| Permission table | a protection level the `grep -A12` window misses would drop a deny entry (boot risk) | fail closed: a requested permission that is defined but has no parsed level aborts privileged mode; `status` reports `UNKNOWN` when it cannot check the allowlist |
+| Other modules | clash on the same package | refused when another enabled module ships `system/(priv-)app/<pkg>`; no other module is ever modified (a module that ships the same package under another directory name is not detected) |
+| CI supply chain | release job has `contents: write` | third-party actions pinned to commit SHAs, checkout without persisted credentials, ShellCheck download checked by SHA-256 |
 | Failure | boot loop | no boot scripts; allowlist ordering; `disable` file / safe mode recover; documented in README |
 | Network | none | the tool and the module download nothing |
 
